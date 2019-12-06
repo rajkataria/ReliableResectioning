@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../../lib/libopencv_photo.a  CMakeFiles/opencv_photo.dir/src/inpaint.cpp.o CMakeFiles/opencv_photo.dir/src/denoising.cpp.o
+/usr/bin/ranlib ../../lib/libopencv_photo.a

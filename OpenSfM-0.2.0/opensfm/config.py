@@ -122,8 +122,24 @@ depthmap_same_depth_threshold: 0.005  # Threshold to measure depth closeness
 depthmap_min_consistent_views: 3      # Min number of views that should reconstruct a point for it to be valid
 depthmap_save_debug_files: no         # Save debug files with partial reconstruction results
 
+# Params for ba from VisualSfM
+bundle_size_increase: 0.05
+
+# Params for resectioning
+resectioning_type: local                            # original or local
+resectioning_distance_measure: aam                  # aam, rmatches, mds, etc.
+resectioning_parameter: 2.0                         # hyperparameter for local resectioning OR threshold when using a distance in original resectioning
+
+# resectioning_type: original                       # original or local
+# resectioning_distance_measure: rmatches           # aam, rmatches, mds, etc.
+# resectioning_parameter: NA                        # hyperparameter for local resectioning OR threshold when using a distance in original resectioning
+
+# resectioning_type: original                         # original or local
+# resectioning_distance_measure: aam                  # aam, rmatches, mds, etc.
+# resectioning_parameter: 60.0                        # hyperparameter for local resectioning OR threshold when using a distance in original resectioning
+
 # Other params
-processes: 1                  # Number of threads to use
+processes: 12                  # Number of threads to use
 
 # Params for submodel split and merge
 submodel_size: 80                                                   # Average number of images per submodel

@@ -7,8 +7,11 @@ from itertools import combinations
 
 import numpy as np
 import cv2
+import json
 import pyopengv
+import os
 import six
+import sys
 from timeit import default_timer as timer
 from six import iteritems
 
@@ -394,7 +397,6 @@ def compute_image_pairs(track_dict, data):
     order = np.argsort(-np.array(score))
     return [pairs[o] for o in order]
 
-
 def _pair_reconstructability_arguments(track_dict, data):
     threshold = 4 * data.config['five_point_algo_threshold']
     cameras = data.load_camera_models()
@@ -540,7 +542,7 @@ def two_view_reconstruction(p1, p2, camera1, camera2, threshold):
     # focal length 1.  Also, arctan(threshold) \approx threshold since
     # threshold is small
     T = run_relative_pose_ransac(
-        b1, b2, "STEWENIUS", 1 - np.cos(threshold), 1000)
+        b1, b2, "STEWENIUS", 1 - np.cos(threshold), 10000)
     R = T[:, :3]
     t = T[:, 3]
     inliers = _two_view_reconstruction_inliers(b1, b2, R, t, threshold)
@@ -684,6 +686,7 @@ def reconstructed_points_for_images(graph, reconstruction, images):
         A list of (image, num_point) pairs sorted by decreasing number
         of points.
     """
+    logger.info('\t***reconstructed_points_for_images***')
     res = []
     for image in images:
         if image not in reconstruction.shots:
@@ -694,6 +697,18 @@ def reconstructed_points_for_images(graph, reconstruction, images):
             res.append((image, common_tracks))
     return sorted(res, key=lambda x: -x[1])
 
+def local_resectioning_reconstructed_points_for_images(graph, reconstruction, images, distances):
+    res = []
+    logger.info('\t***local_resectioning_reconstructed_points_for_images***')
+
+    for image in images:
+        if image not in reconstruction.shots:
+            shot_distances = []
+            for s in reconstruction.shots.keys():
+                shot_distances.append(distances[image][s])
+
+            res.append((image, np.min(np.array(shot_distances))))
+    return sorted(res, key=lambda x: x[1])
 
 def resect(data, graph, reconstruction, shot_id):
     """Try resecting and adding a shot to the reconstruction.
@@ -701,6 +716,7 @@ def resect(data, graph, reconstruction, shot_id):
     Return:
         True on success.
     """
+    logger.info('\t***resect***')
     exif = data.load_exif(shot_id)
     camera = reconstruction.cameras[exif['camera']]
 
@@ -719,7 +735,7 @@ def resect(data, graph, reconstruction, shot_id):
 
     threshold = data.config['resection_threshold']
     T = pyopengv.absolute_pose_ransac(
-        bs, Xs, "KNEIP", 1 - np.cos(threshold), 1000)
+        bs, Xs, "KNEIP", 1 - np.cos(threshold), 10000)
 
     R = T[:, :3]
     t = T[:, 3]
@@ -752,6 +768,129 @@ def resect(data, graph, reconstruction, shot_id):
     else:
         return False, report
 
+def remove_irrelevant_observations(reconstruction, graph, shot_id, relevant_tracks):
+    tracks = graph[shot_id].keys()
+    reconstructed_shot_tracks = set(graph[shot_id].keys()).intersection(set(reconstruction.points.keys()))
+    erroneous_tracks = reconstructed_shot_tracks - set(relevant_tracks)
+    if len(erroneous_tracks) > 0:
+        graph.remove_edges_from([(shot_id, e) for e in erroneous_tracks])
+
+def local_resectioning_resect(data, graph, reconstruction, shot_id, pairwise_distances):
+    logger.info('\t***local_resectioning_resect***')
+    exif = data.load_exif(shot_id)
+    camera = reconstruction.cameras[exif['camera']]
+    reconstructed_shots = np.array(sorted(reconstruction.shots.keys()))
+
+    bs = []
+    Xs = []
+    relevant_tracks = []
+    im_matches = {}
+
+    distances = [0.0]
+    for s in reconstructed_shots:
+        im1 = s if s < shot_id else shot_id
+        im2 = shot_id if s < shot_id else s
+        distances.append(pairwise_distances[im1][im2])
+    distances = np.array([distances])
+    distance_sorted = distances[0,np.argsort(distances[0,:])][1:]
+    distance_sorted_reconstructed_images = reconstructed_shots[np.argsort(distances[0,1:])]
+
+    k = 1
+    k_max = len(np.where(distance_sorted < distance_sorted[0] * data.config['resectioning_parameter'])[0])
+    closest_reconstructed_images_max = set(distance_sorted_reconstructed_images[0:min(len(distance_sorted_reconstructed_images), k_max)])
+    for track in graph[shot_id]:
+        if track in reconstruction.points:
+
+            feature_matches_in_track = 0
+            reconstructed_track_shot_images_max = set(graph[track].keys()).intersection(set(closest_reconstructed_images_max))
+            # reconstructed_track_shot_images_all = set(graph[track].keys()).intersection(distance_sorted_reconstructed_images)
+
+            for track_image in graph[track]:
+                if track_image == shot_id:
+                    continue
+
+                if track_image not in reconstruction.shots:
+                    continue
+                # import pdb; pdb.set_trace()
+                # if len(reconstructed_track_shot_images_max) < min(k,len(reconstructed_track_shot_images_all)):
+                if len(reconstructed_track_shot_images_max) == 0:
+                    continue
+                
+                feature_matches_in_track = 1
+                # if track_image < shot_id:
+                #     im1 = track_image
+                #     im2 = shot_id
+                # else:
+                #     im1 = shot_id
+                #     im2 = track_image
+
+                # if im1 not in im_matches and data.matches_exists(im1):
+                #     im_matches[im1] = data.load_matches(im1)
+                # if im2 not in im_matches and data.matches_exists(im2):
+                #     im_matches[im2] = data.load_matches(im2)
+
+                # fid1 = graph[track][im1]['feature_id']
+                # fid2 = graph[track][im2]['feature_id']
+
+                # if im2 in im_matches[im1] and len(im_matches[im1][im2]) > 0:
+                #     if len(np.where((im_matches[im1][im2][:,0] == fid1) & (im_matches[im1][im2][:,1] == fid2))[0]) > 0:
+                #         feature_matches_in_track += 1.0
+                # elif im1 in im_matches[im2] and len(im_matches[im2][im1]) > 0:
+                #     if len(np.where((im_matches[im2][im1][:,0] == fid2) & (im_matches[im2][im1][:,1] == fid1))[0]) > 0:
+                #         feature_matches_in_track += 1.0
+                # else:
+                #     continue
+            
+            if feature_matches_in_track >= 1:# >= min(k,len(reconstructed_track_shot_images_all)):
+                x = graph[track][shot_id]['feature']
+                b = camera.pixel_bearing(x)
+                bs.append(b)
+                Xs.append(reconstruction.points[track].coordinates)
+                relevant_tracks.append(track)
+
+    logger.info('\t\t matches with closest image only: {} / {}'.format(shot_id, len(Xs)))
+    bs = np.array(bs)
+    Xs = np.array(Xs)
+    relevant_tracks = np.array(relevant_tracks)
+    remove_irrelevant_observations(reconstruction, graph, shot_id, relevant_tracks)
+
+    if len(bs) < 5:
+        return False, {'num_common_points': len(bs)}
+
+    threshold = data.config['resection_threshold']
+    T = pyopengv.absolute_pose_ransac(
+        bs, Xs, "KNEIP", 1 - np.cos(threshold), 10000)
+
+    R = T[:, :3]
+    t = T[:, 3]
+
+    reprojected_bs = R.T.dot((Xs - t).T).T
+    reprojected_bs /= np.linalg.norm(reprojected_bs, axis=1)[:, np.newaxis]
+
+    inliers = np.linalg.norm(reprojected_bs - bs, axis=1) < threshold
+    ninliers = int(sum(inliers))
+
+    logger.info("{} resection inliers: {} / {}".format(
+        shot_id, int(sum(inliers)), len(bs)))
+    report = {
+        'num_common_points': len(bs),
+        'num_inliers': ninliers,
+    }
+    if ninliers >= data.config['resection_min_inliers']:
+        R = T[:, :3].T
+        t = -R.dot(T[:, 3])
+        shot = types.Shot()
+        shot.id = shot_id
+        shot.camera = camera
+        shot.pose = types.Pose()
+        shot.pose.set_rotation_matrix(R)
+        shot.pose.translation = t
+        shot.metadata = get_image_metadata(data, shot_id)
+        reconstruction.add_shot(shot)
+        bundle_single_view(graph, reconstruction, shot_id, data.config)
+        return True, report
+    else:
+        return False, report
 
 class TrackTriangulator:
     """Triangulate tracks in a reconstruction.
@@ -859,7 +998,6 @@ def retriangulate(graph, reconstruction, config):
     report['wall_time'] = chrono.total_time()
     return report
 
-
 def remove_outliers(graph, reconstruction, config):
     """Remove points with large reprojection error."""
     threshold = config['bundle_outlier_threshold']
@@ -954,7 +1092,10 @@ def merge_reconstructions(reconstructions, config):
 def paint_reconstruction(data, graph, reconstruction):
     """Set the color of the points from the color of the tracks."""
     for k, point in iteritems(reconstruction.points):
-        point.color = six.next(six.itervalues(graph[k]))['feature_color']
+        try:
+            point.color = six.next(six.itervalues(graph[k]))['feature_color']
+        except:
+            point.color = [255, 0, 0]
 
 
 class ShouldBundle:
@@ -963,13 +1104,17 @@ class ShouldBundle:
     def __init__(self, data, reconstruction):
         self.interval = data.config['bundle_interval']
         self.new_points_ratio = data.config['bundle_new_points_ratio']
+        self.size_increase = data.config['bundle_size_increase']
         self.done(reconstruction)
 
     def should(self, reconstruction):
-        max_points = self.num_points_last * self.new_points_ratio
-        max_shots = self.num_shots_last + self.interval
-        return (len(reconstruction.points) >= max_points or
-                len(reconstruction.shots) >= max_shots)
+        recon_size_increase = 1.0 * len(reconstruction.shots) / self.num_shots_last
+        if recon_size_increase >= 1.0 + self.size_increase:
+            max_points = self.num_points_last * self.new_points_ratio
+            max_shots = self.num_shots_last + self.interval
+            return (len(reconstruction.points) >= max_points or
+                    len(reconstruction.shots) >= max_shots)
+        return False
 
     def done(self, reconstruction):
         self.num_points_last = len(reconstruction.points)
@@ -991,7 +1136,6 @@ class ShouldRetriangulate:
     def done(self, reconstruction):
         self.num_points_last = len(reconstruction.points)
 
-
 def grow_reconstruction(data, graph, reconstruction, images, gcp):
     """Incrementally add shots to an initial reconstruction."""
     bundle(graph, reconstruction, None, data.config)
@@ -1002,6 +1146,79 @@ def grow_reconstruction(data, graph, reconstruction, images, gcp):
     report = {
         'steps': [],
     }
+
+
+    if data.config.get('resectioning_type', 'original') == 'local':
+        pairwise_distances = {}
+        cache = {}
+        if data.config['resectioning_distance_measure'] == 'aam':
+            # data.mds_options = {
+            #     'sp_label': 'rm-cost',
+            #     'PCA-n_components': 2,
+            #     'MDS-n_components': 2,
+            #     'iteration_distance_filter_value': 0.6,
+            #     'edge_threshold': {
+            #         'rm-cost': '10000000000',
+            #         'gt': '10000000000',
+            #         'inlier-logp': '1e-10',
+            #     },
+            #     'lmds': False,
+            #     'iteration': 0,
+            #     'use_soft_tracks': True,
+            #     'use_shortest_paths': True,
+            #     'debug': True
+            # }
+            # for im1 in sorted(data.images()):
+            #     if im1 not in cache:
+            #         cache[im1] = data.load_shortest_paths(im1, \
+            #             label=data.mds_options['sp_label'], \
+            #             edge_threshold=data.mds_options['edge_threshold'][data.mds_options['sp_label']], \
+            #             iteration=data.mds_options['iteration'], \
+            #             idfv=data.mds_options['iteration_distance_filter_value'], \
+            #             ust=data.mds_options['use_soft_tracks']
+            #             )
+            # for im1 in sorted(data.images()):
+            #     for im2 in sorted(data.images()):
+            #         if im1 == im2:
+            #             continue
+            #         if im1 not in pairwise_distances:
+            #             pairwise_distances[im1] = {}
+            #         if im2 not in pairwise_distances:
+            #             pairwise_distances[im2] = {}
+                    
+            #         im1_ = im1 if im1 < im2 else im2
+            #         im2_ = im2 if im1 < im2 else im1
+            #         pairwise_distances[im1][im2] = cache[im1_][im2_]['cost']
+            aam_matches = data.load_aam_matches()
+            epsilon = 0.00000001 # in case 0 matches are found
+            for im1 in sorted(data.images()):
+                for im2 in sorted(data.images()):
+                    if im1 == im2:
+                        continue
+                    if im1 not in pairwise_distances:
+                        pairwise_distances[im1] = {}
+                    pairwise_distances[im1][im2] = 1.0/(aam_matches[im1][im2] + epsilon)
+
+            
+        elif data.config['resectioning_distance_measure'] == 'rmatches':
+            for im1 in sorted(data.images()):
+                if im1 not in cache:
+                    cache[im1] = data.load_matches(im1)
+            for im1 in sorted(data.images()):
+                for im2 in sorted(data.images()):
+                    if im1 == im2:
+                        continue
+                    if im1 not in pairwise_distances:
+                        pairwise_distances[im1] = {}
+                    if im2 not in pairwise_distances:
+                        pairwise_distances[im2] = {}
+                    num_rmatches = 0.00000000001
+                    if im1 in rmatches and im2 in rmatches[im1] and len(rmatches[im1][im2]) > 0:
+                        num_rmatches = len(rmatches[im1][im2])
+                    elif im2 in rmatches and im1 in rmatches[im2] and len(rmatches[im2][im1]) > 0:
+                        num_rmatches = len(rmatches[im2][im1])
+                    pairwise_distances[im1][im2] = 1.0/num_rmatches
+
     while True:
         if data.config['save_partial_reconstructions']:
             paint_reconstruction(data, graph, reconstruction)
@@ -1009,14 +1226,23 @@ def grow_reconstruction(data, graph, reconstruction, images, gcp):
                 [reconstruction], 'reconstruction.{}.json'.format(
                     datetime.datetime.now().isoformat().replace(':', '_')))
 
-        common_tracks = reconstructed_points_for_images(graph, reconstruction,
-                                                        images)
-        if not common_tracks:
+        if data.config.get('resectioning_type', 'original') == 'local':
+            logger.info('Using local resectioning')
+            resectioning_order_measure = local_resectioning_reconstructed_points_for_images(graph, reconstruction, images, pairwise_distances)
+        else:
+            logger.info('Using original resectioning')
+            resectioning_order_measure = reconstructed_points_for_images(graph, reconstruction, images)
+
+        if not resectioning_order_measure:
             break
 
         logger.info("-------------------------------------------------------")
-        for image, num_tracks in common_tracks:
-            ok, resrep = resect(data, graph, reconstruction, image)
+
+        for image, _ in resectioning_order_measure:
+            if data.config.get('resectioning_type', 'original') == 'local':
+                ok, resrep = local_resectioning_resect(data, graph, reconstruction, image, pairwise_distances)
+            else:
+                ok, resrep = resect(data, graph, reconstruction, image)
             if ok:
                 logger.info("Adding {0} to the reconstruction".format(image))
                 step = {
@@ -1028,11 +1254,13 @@ def grow_reconstruction(data, graph, reconstruction, images, gcp):
                 images.remove(image)
 
                 np_before = len(reconstruction.points)
+
                 triangulate_shot_features(
                     graph, reconstruction, image,
                     data.config['triangulation_threshold'],
                     data.config['triangulation_min_ray_angle'])
                 np_after = len(reconstruction.points)
+
                 step['triangulated_points'] = np_after - np_before
 
                 if should_bundle.should(reconstruction):
@@ -1054,13 +1282,13 @@ def grow_reconstruction(data, graph, reconstruction, images, gcp):
                     step['retriangulation'] = rrep
                     bundle(graph, reconstruction, None, data.config)
                     should_retriangulate.done(reconstruction)
+
                 break
         else:
             logger.info("Some images can not be added")
             break
 
     logger.info("-------------------------------------------------------")
-
     bundle(graph, reconstruction, gcp, data.config)
     align.align_reconstruction(reconstruction, gcp, data.config)
     paint_reconstruction(data, graph, reconstruction)
@@ -1075,7 +1303,17 @@ def incremental_reconstruction(data):
     if not data.reference_lla_exists():
         data.invent_reference_lla()
 
-    graph = data.load_tracks_graph()
+    if data.config.get('resectioning_type', False) == 'local':
+        logger.info('Using track file - {}'.format('tracks.csv'))
+        graph = data.load_tracks_graph('tracks.csv')
+    elif data.config.get('resectioning_type', False) == 'original':
+        if data.config.get('resectioning_distance_measure', False) == 'rmatches':
+            logger.info('Using track file - {}'.format('tracks.csv'))
+            graph = data.load_tracks_graph('tracks.csv')
+        elif data.config.get('resectioning_distance_measure', False) == 'aam':
+            logger.info('Using track file - {}'.format('tracks-{}-{}.csv'.format(data.config['resectioning_distance_measure'], data.config['resectioning_parameter'])))
+            graph = data.load_tracks_graph('tracks-{}-{}.csv'.format(data.config['resectioning_distance_measure'], data.config['resectioning_parameter']))
+
     tracks, images = matching.tracks_and_images(graph)
     chrono.lap('load_tracks_graph')
     remaining_images = set(images)
@@ -1088,6 +1326,7 @@ def incremental_reconstruction(data):
     chrono.lap('compute_image_pairs')
     report['num_candidate_image_pairs'] = len(pairs)
     report['reconstructions'] = []
+
     for im1, im2 in pairs:
         if im1 in remaining_images and im2 in remaining_images:
             rec_report = {}
@@ -1104,7 +1343,13 @@ def incremental_reconstruction(data):
                 reconstructions.append(reconstruction)
                 reconstructions = sorted(reconstructions,
                                          key=lambda x: -len(x.shots))
-                data.save_reconstruction(reconstructions)
+                
+                reconstruction_fn = 'reconstruction-supplimental-resectioning_type-{}-resectioning_distance_measure-{}-resectioning_parameter-{}.json'.format(\
+                    data.config['resectioning_type'], \
+                    data.config['resectioning_distance_measure'], \
+                    data.config['resectioning_parameter']
+                    )
+                data.save_reconstruction(reconstructions, filename=reconstruction_fn)
 
     for k, r in enumerate(reconstructions):
         logger.info("Reconstruction {}: {} images, {} points".format(

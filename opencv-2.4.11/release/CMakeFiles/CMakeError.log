@@ -1,0 +1,90 @@
+Determining if the system is big endian passed with the following output:
+Change Dir: /mds-sfm/pipelines/opencv-2.4.11/release/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_bac44/fast"
+/usr/bin/make -f CMakeFiles/cmTC_bac44.dir/build.make CMakeFiles/cmTC_bac44.dir/build
+make[1]: Entering directory '/mds-sfm/pipelines/opencv-2.4.11/release/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_bac44.dir/TestEndianess.c.o
+/usr/bin/cc    -fPIC   -fsigned-char -W -Wall -Werror=return-type -Werror=address -Werror=sequence-point -Wformat -Werror=format-security -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wundef -Winit-self -Wpointer-arith -Wshadow -Wno-narrowing -fdiagnostics-show-option -Wno-long-long -pthread -fomit-frame-pointer -ffast-math -msse -msse2 -msse3 -ffunction-sections  -O3 -DNDEBUG   -o CMakeFiles/cmTC_bac44.dir/TestEndianess.c.o   -c /mds-sfm/pipelines/opencv-2.4.11/release/CMakeFiles/CMakeTmp/TestEndianess.c
+Linking C executable cmTC_bac44
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_bac44.dir/link.txt --verbose=1
+/usr/bin/cc   -fPIC   -fsigned-char -W -Wall -Werror=return-type -Werror=address -Werror=sequence-point -Wformat -Werror=format-security -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wundef -Winit-self -Wpointer-arith -Wshadow -Wno-narrowing -fdiagnostics-show-option -Wno-long-long -pthread -fomit-frame-pointer -ffast-math -msse -msse2 -msse3 -ffunction-sections  -O3 -DNDEBUG    CMakeFiles/cmTC_bac44.dir/TestEndianess.c.o  -o cmTC_bac44 -rdynamic 
+make[1]: Leaving directory '/mds-sfm/pipelines/opencv-2.4.11/release/CMakeFiles/CMakeTmp'
+
+TestEndianess.c:
+/* A 16 bit integer is required. */
+typedef unsigned short cmakeint16;
+
+/* On a little endian machine, these 16bit ints will give "THIS IS LITTLE ENDIAN."
+   On a big endian machine the characters will be exchanged pairwise. */
+const cmakeint16 info_little[] =  {0x4854, 0x5349, 0x4920, 0x2053, 0x494c, 0x5454, 0x454c, 0x4520, 0x444e, 0x4149, 0x2e4e, 0x0000};
+
+/* on a big endian machine, these 16bit ints will give "THIS IS BIG ENDIAN."
+   On a little endian machine the characters will be exchanged pairwise. */
+const cmakeint16 info_big[] =     {0x5448, 0x4953, 0x2049, 0x5320, 0x4249, 0x4720, 0x454e, 0x4449, 0x414e, 0x2e2e, 0x0000};
+
+#ifdef __CLASSIC_C__
+int main(argc, argv) int argc; char *argv[];
+#else
+int main(int argc, char *argv[])
+#endif
+{
+  int require = 0;
+  require += info_little[argc];
+  require += info_big[argc];
+  (void)argv;
+  return require;
+}
+
+
+Determining if the include file linux/videodev.h exists failed with the following output:
+Change Dir: /mds-sfm/pipelines/opencv-2.4.11/release/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_8f5b9/fast"
+/usr/bin/make -f CMakeFiles/cmTC_8f5b9.dir/build.make CMakeFiles/cmTC_8f5b9.dir/build
+make[1]: Entering directory '/mds-sfm/pipelines/opencv-2.4.11/release/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_8f5b9.dir/CheckIncludeFile.c.o
+/usr/bin/cc    -fPIC   -fsigned-char -W -Wall -Werror=return-type -Werror=address -Werror=sequence-point -Wformat -Werror=format-security -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wundef -Winit-self -Wpointer-arith -Wshadow -Wno-narrowing -fdiagnostics-show-option -Wno-long-long -pthread -fomit-frame-pointer -ffast-math -msse -msse2 -msse3 -ffunction-sections  -O3 -DNDEBUG   -o CMakeFiles/cmTC_8f5b9.dir/CheckIncludeFile.c.o   -c /mds-sfm/pipelines/opencv-2.4.11/release/CMakeFiles/CMakeTmp/CheckIncludeFile.c
+/mds-sfm/pipelines/opencv-2.4.11/release/CMakeFiles/CMakeTmp/CheckIncludeFile.c:1:28: fatal error: linux/videodev.h: No such file or directory
+compilation terminated.
+CMakeFiles/cmTC_8f5b9.dir/build.make:65: recipe for target 'CMakeFiles/cmTC_8f5b9.dir/CheckIncludeFile.c.o' failed
+make[1]: *** [CMakeFiles/cmTC_8f5b9.dir/CheckIncludeFile.c.o] Error 1
+make[1]: Leaving directory '/mds-sfm/pipelines/opencv-2.4.11/release/CMakeFiles/CMakeTmp'
+Makefile:126: recipe for target 'cmTC_8f5b9/fast' failed
+make: *** [cmTC_8f5b9/fast] Error 2
+
+
+Determining if the include file sys/videoio.h exists failed with the following output:
+Change Dir: /mds-sfm/pipelines/opencv-2.4.11/release/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_cc0a8/fast"
+/usr/bin/make -f CMakeFiles/cmTC_cc0a8.dir/build.make CMakeFiles/cmTC_cc0a8.dir/build
+make[1]: Entering directory '/mds-sfm/pipelines/opencv-2.4.11/release/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_cc0a8.dir/CheckIncludeFile.c.o
+/usr/bin/cc    -fPIC   -fsigned-char -W -Wall -Werror=return-type -Werror=address -Werror=sequence-point -Wformat -Werror=format-security -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wundef -Winit-self -Wpointer-arith -Wshadow -Wno-narrowing -fdiagnostics-show-option -Wno-long-long -pthread -fomit-frame-pointer -ffast-math -msse -msse2 -msse3 -ffunction-sections  -O3 -DNDEBUG   -o CMakeFiles/cmTC_cc0a8.dir/CheckIncludeFile.c.o   -c /mds-sfm/pipelines/opencv-2.4.11/release/CMakeFiles/CMakeTmp/CheckIncludeFile.c
+/mds-sfm/pipelines/opencv-2.4.11/release/CMakeFiles/CMakeTmp/CheckIncludeFile.c:1:25: fatal error: sys/videoio.h: No such file or directory
+compilation terminated.
+CMakeFiles/cmTC_cc0a8.dir/build.make:65: recipe for target 'CMakeFiles/cmTC_cc0a8.dir/CheckIncludeFile.c.o' failed
+make[1]: *** [CMakeFiles/cmTC_cc0a8.dir/CheckIncludeFile.c.o] Error 1
+make[1]: Leaving directory '/mds-sfm/pipelines/opencv-2.4.11/release/CMakeFiles/CMakeTmp'
+Makefile:126: recipe for target 'cmTC_cc0a8/fast' failed
+make: *** [cmTC_cc0a8/fast] Error 2
+
+
+Determining if the include file ffmpeg/avformat.h exists failed with the following output:
+Change Dir: /mds-sfm/pipelines/opencv-2.4.11/release/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_35cc3/fast"
+/usr/bin/make -f CMakeFiles/cmTC_35cc3.dir/build.make CMakeFiles/cmTC_35cc3.dir/build
+make[1]: Entering directory '/mds-sfm/pipelines/opencv-2.4.11/release/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_35cc3.dir/CheckIncludeFile.c.o
+/usr/bin/cc    -fPIC   -fsigned-char -W -Wall -Werror=return-type -Werror=address -Werror=sequence-point -Wformat -Werror=format-security -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wundef -Winit-self -Wpointer-arith -Wshadow -Wno-narrowing -fdiagnostics-show-option -Wno-long-long -pthread -fomit-frame-pointer -ffast-math -msse -msse2 -msse3 -ffunction-sections  -O3 -DNDEBUG   -o CMakeFiles/cmTC_35cc3.dir/CheckIncludeFile.c.o   -c /mds-sfm/pipelines/opencv-2.4.11/release/CMakeFiles/CMakeTmp/CheckIncludeFile.c
+/mds-sfm/pipelines/opencv-2.4.11/release/CMakeFiles/CMakeTmp/CheckIncludeFile.c:1:29: fatal error: ffmpeg/avformat.h: No such file or directory
+compilation terminated.
+CMakeFiles/cmTC_35cc3.dir/build.make:65: recipe for target 'CMakeFiles/cmTC_35cc3.dir/CheckIncludeFile.c.o' failed
+make[1]: *** [CMakeFiles/cmTC_35cc3.dir/CheckIncludeFile.c.o] Error 1
+make[1]: Leaving directory '/mds-sfm/pipelines/opencv-2.4.11/release/CMakeFiles/CMakeTmp'
+Makefile:126: recipe for target 'cmTC_35cc3/fast' failed
+make: *** [cmTC_35cc3/fast] Error 2
+
+

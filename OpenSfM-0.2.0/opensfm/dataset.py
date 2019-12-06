@@ -518,6 +518,31 @@ class DataSet:
             return io.read_ground_control_points_list(
                 fin, self.load_reference_lla(), exif)
 
+    # For local resectioning
+    # def __aam_file(self, filename=None):
+    #     """Return path of tracks file"""
+    #     return os.path.join(self.data_path, filename or 'tracks.csv')
+
+    def __feature_shortest_paths_file(self, im, label, ext='pkl.gz'):
+        """File for flags indicating whether calibrated robust matching occured"""
+        return os.path.join(os.path.join(self.data_path, 'classifier_features') + '/shortest_paths', '{}_shortest_paths-{}.{}'.format(im, label, ext))
+
+    def __aam_file(self):
+        return os.path.join(self.data_path, 'aam_matches.json')
+
+    def load_shortest_paths(self, im, label, edge_threshold, iteration, idfv, ust):
+        with gzip.open(self.__feature_shortest_paths_file(im, label='{}-edge_threshold-{}-it-{}-idfv-{}-ust-{}'.format(label, edge_threshold, iteration, idfv, ust)), 'rb') as fin:
+            shortest_paths = pickle.load(fin)
+        return shortest_paths
+
+    def load_aam_matches(self):
+        with open(self.__aam_file(), 'r') as fin:
+            aam_matches = json.load(fin)
+        return aam_matches
+
+    def save_aam_matches(self, aam_matches):
+        with open(self.__aam_file(), 'w') as fout:
+            json.dump(aam_matches, fout, sort_keys=True, indent=4, separators=(',', ': '))
 
 def load_tracks_graph(fileobj):
     g = nx.Graph()

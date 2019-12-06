@@ -175,8 +175,13 @@ def create_tracks_graph(features, colors, matches, config):
     logger.debug('Merging features onto tracks')
     uf = UnionFind()
     for im1, im2 in matches:
-        for f1, f2 in matches[im1, im2]:
-            uf.union((im1, f1), (im2, f2))
+        try:
+            for f1, f2 in matches[im1, im2]:
+                uf.union((im1, f1), (im2, f2))
+        except:
+            for f1, f2, _, _ in matches[im1, im2]:
+                uf.union((im1, f1), (im2, f2))
+            # import pdb; pdb.set_trace()
 
     sets = {}
     for i in uf:

@@ -3,6 +3,7 @@ from . import extract_metadata
 from . import detect_features
 from . import match_features
 from . import create_tracks
+from . import create_aam
 from . import reconstruct
 from . import mesh
 from . import undistort
@@ -20,6 +21,7 @@ opensfm_commands = [
     detect_features,
     match_features,
     create_tracks,
+    create_aam,
     reconstruct,
     mesh,
     undistort,
