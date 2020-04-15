@@ -1,0 +1,10 @@
+Dataset,Sequence,Images,Cameras Registered - 1,Points Triangulated - 1,ATE (cm) - 1,ATE (dm) - 1,ATE (m) - 1,Mean RPE (deg) - 1,Cameras Registered - 2,Points Triangulated - 2,ATE (cm) - 2,ATE (dm) - 2,ATE (m) - 2,Mean RPE (deg) - 2,Cameras Registered - 3,Points Triangulated - 3,ATE (cm) - 3,ATE (dm) - 3,ATE (m) - 3,Mean RPE (deg) - 3,Cameras Registered - 4,Points Triangulated - 4,ATE (cm) - 4,ATE (dm) - 4,ATE (m) - 4,Mean RPE (deg) - 4,Cameras Registered - 5,Points Triangulated - 5,ATE (cm) - 5,ATE (dm) - 5,ATE (m) - 5,Mean RPE (deg) - 5,Cameras Registered - 6,Points Triangulated - 6,ATE (cm) - 6,ATE (dm) - 6,ATE (m) - 6,Mean RPE (deg) - 6,Cameras Registered - 7,Points Triangulated - 7,ATE (cm) - 7,ATE (dm) - 7,ATE (m) - 7,Mean RPE (deg) - 7
+"{
+    ""1"": ""Baseline"",
+    ""2"": ""Baseline + colmap resectioning"",
+    ""3"": ""MDS + colmap resectioning + 6-14 @ 15%"",
+    ""4"": ""MDS + colmap resectioning + 6-14 @ 20%"",
+    ""5"": ""MDS + colmap resectioning + 7-12 @ 15%"",
+    ""6"": ""MDS + colmap + mst-adaptive-distance (0.5 * max length)"",
+    ""7"": ""MDS + colmap + soft tracks + mst-adaptive-distance (0.5 * max length)""
+}",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
