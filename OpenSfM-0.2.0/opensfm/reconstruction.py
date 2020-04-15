@@ -803,7 +803,7 @@ def local_resectioning_resect(data, graph, reconstruction, shot_id, pairwise_dis
 
             feature_matches_in_track = 0
             reconstructed_track_shot_images_max = set(graph[track].keys()).intersection(set(closest_reconstructed_images_max))
-            # reconstructed_track_shot_images_all = set(graph[track].keys()).intersection(distance_sorted_reconstructed_images)
+            reconstructed_track_shot_images_all = set(graph[track].keys()).intersection(distance_sorted_reconstructed_images)
 
             for track_image in graph[track]:
                 if track_image == shot_id:
@@ -811,37 +811,34 @@ def local_resectioning_resect(data, graph, reconstruction, shot_id, pairwise_dis
 
                 if track_image not in reconstruction.shots:
                     continue
-                # import pdb; pdb.set_trace()
-                # if len(reconstructed_track_shot_images_max) < min(k,len(reconstructed_track_shot_images_all)):
-                if len(reconstructed_track_shot_images_max) == 0:
+                if len(reconstructed_track_shot_images_max) < min(k,len(reconstructed_track_shot_images_all)):
                     continue
                 
-                feature_matches_in_track = 1
-                # if track_image < shot_id:
-                #     im1 = track_image
-                #     im2 = shot_id
-                # else:
-                #     im1 = shot_id
-                #     im2 = track_image
+                if track_image < shot_id:
+                    im1 = track_image
+                    im2 = shot_id
+                else:
+                    im1 = shot_id
+                    im2 = track_image
 
-                # if im1 not in im_matches and data.matches_exists(im1):
-                #     im_matches[im1] = data.load_matches(im1)
-                # if im2 not in im_matches and data.matches_exists(im2):
-                #     im_matches[im2] = data.load_matches(im2)
+                if im1 not in im_matches and data.matches_exists(im1):
+                    im_matches[im1] = data.load_matches(im1)
+                if im2 not in im_matches and data.matches_exists(im2):
+                    im_matches[im2] = data.load_matches(im2)
 
-                # fid1 = graph[track][im1]['feature_id']
-                # fid2 = graph[track][im2]['feature_id']
+                fid1 = graph[track][im1]['feature_id']
+                fid2 = graph[track][im2]['feature_id']
 
-                # if im2 in im_matches[im1] and len(im_matches[im1][im2]) > 0:
-                #     if len(np.where((im_matches[im1][im2][:,0] == fid1) & (im_matches[im1][im2][:,1] == fid2))[0]) > 0:
-                #         feature_matches_in_track += 1.0
-                # elif im1 in im_matches[im2] and len(im_matches[im2][im1]) > 0:
-                #     if len(np.where((im_matches[im2][im1][:,0] == fid2) & (im_matches[im2][im1][:,1] == fid1))[0]) > 0:
-                #         feature_matches_in_track += 1.0
-                # else:
-                #     continue
+                if im2 in im_matches[im1] and len(im_matches[im1][im2]) > 0:
+                    if len(np.where((im_matches[im1][im2][:,0] == fid1) & (im_matches[im1][im2][:,1] == fid2))[0]) > 0:
+                        feature_matches_in_track += 1.0
+                elif im1 in im_matches[im2] and len(im_matches[im2][im1]) > 0:
+                    if len(np.where((im_matches[im2][im1][:,0] == fid2) & (im_matches[im2][im1][:,1] == fid1))[0]) > 0:
+                        feature_matches_in_track += 1.0
+                else:
+                    continue
             
-            if feature_matches_in_track >= 1:# >= min(k,len(reconstructed_track_shot_images_all)):
+            if feature_matches_in_track >= min(k,len(reconstructed_track_shot_images_all)):
                 x = graph[track][shot_id]['feature']
                 b = camera.pixel_bearing(x)
                 bs.append(b)
@@ -1152,43 +1149,6 @@ def grow_reconstruction(data, graph, reconstruction, images, gcp):
         pairwise_distances = {}
         cache = {}
         if data.config['resectioning_distance_measure'] == 'aam':
-            # data.mds_options = {
-            #     'sp_label': 'rm-cost',
-            #     'PCA-n_components': 2,
-            #     'MDS-n_components': 2,
-            #     'iteration_distance_filter_value': 0.6,
-            #     'edge_threshold': {
-            #         'rm-cost': '10000000000',
-            #         'gt': '10000000000',
-            #         'inlier-logp': '1e-10',
-            #     },
-            #     'lmds': False,
-            #     'iteration': 0,
-            #     'use_soft_tracks': True,
-            #     'use_shortest_paths': True,
-            #     'debug': True
-            # }
-            # for im1 in sorted(data.images()):
-            #     if im1 not in cache:
-            #         cache[im1] = data.load_shortest_paths(im1, \
-            #             label=data.mds_options['sp_label'], \
-            #             edge_threshold=data.mds_options['edge_threshold'][data.mds_options['sp_label']], \
-            #             iteration=data.mds_options['iteration'], \
-            #             idfv=data.mds_options['iteration_distance_filter_value'], \
-            #             ust=data.mds_options['use_soft_tracks']
-            #             )
-            # for im1 in sorted(data.images()):
-            #     for im2 in sorted(data.images()):
-            #         if im1 == im2:
-            #             continue
-            #         if im1 not in pairwise_distances:
-            #             pairwise_distances[im1] = {}
-            #         if im2 not in pairwise_distances:
-            #             pairwise_distances[im2] = {}
-                    
-            #         im1_ = im1 if im1 < im2 else im2
-            #         im2_ = im2 if im1 < im2 else im1
-            #         pairwise_distances[im1][im2] = cache[im1_][im2_]['cost']
             aam_matches = data.load_aam_matches()
             epsilon = 0.00000001 # in case 0 matches are found
             for im1 in sorted(data.images()):
@@ -1198,8 +1158,6 @@ def grow_reconstruction(data, graph, reconstruction, images, gcp):
                     if im1 not in pairwise_distances:
                         pairwise_distances[im1] = {}
                     pairwise_distances[im1][im2] = 1.0/(aam_matches[im1][im2] + epsilon)
-
-            
         elif data.config['resectioning_distance_measure'] == 'rmatches':
             for im1 in sorted(data.images()):
                 if im1 not in cache:
@@ -1213,10 +1171,10 @@ def grow_reconstruction(data, graph, reconstruction, images, gcp):
                     if im2 not in pairwise_distances:
                         pairwise_distances[im2] = {}
                     num_rmatches = 0.00000000001
-                    if im1 in rmatches and im2 in rmatches[im1] and len(rmatches[im1][im2]) > 0:
-                        num_rmatches = len(rmatches[im1][im2])
-                    elif im2 in rmatches and im1 in rmatches[im2] and len(rmatches[im2][im1]) > 0:
-                        num_rmatches = len(rmatches[im2][im1])
+                    if im1 in cache and im2 in cache[im1] and len(cache[im1][im2]) > 0:
+                        num_rmatches = len(cache[im1][im2])
+                    elif im2 in cache and im1 in cache[im2] and len(cache[im2][im1]) > 0:
+                        num_rmatches = len(cache[im2][im1])
                     pairwise_distances[im1][im2] = 1.0/num_rmatches
 
     while True:

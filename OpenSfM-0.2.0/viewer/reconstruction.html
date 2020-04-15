@@ -41,6 +41,7 @@
                 display: none;
                 font-family: sans-serif;
                 font-size: 30px;
+                background-color: #00ff00;
             }
             #journeyButton {
                 display: none;
@@ -268,8 +269,8 @@
             };
 
             var options = {
-                cameraSize: 0.9,
-                pointSize: 0.7,
+                cameraSize: 1.9,
+                pointSize: 1.7,
                 imagePlaneSize: 50,
                 showThumbnail: true,
                 showImagePlane: false,
@@ -277,7 +278,7 @@
                 drawGPS: false,
                 animationSpeed: 0.1,
                 imagePlaneOpacity: 1,
-                cameraColor: new THREE.Color(0xFFFFFF),
+                cameraColor: new THREE.Color(0x00FF00),
                 hoverCameraColor: new THREE.Color(0xFF8888),
                 selectedCameraColor: new THREE.Color(0xFFFF88),
                 reconstruction_visibles: {},
@@ -306,10 +307,10 @@
                 var gui = new dat.GUI();
 
                 f1 = gui.addFolder('Options');
-                f1.add(options, 'pointSize', 0, 2)
+                f1.add(options, 'pointSize', 0, 10)
                     .listen()
                     .onChange(setPointSize);
-                f1.add(options, 'cameraSize', 0, 2)
+                f1.add(options, 'cameraSize', 0, 10)
                     .listen()
                     .onChange(setCameraSize);
                 f1.add(options, 'imagePlaneSize', 1, 200)
@@ -774,7 +775,7 @@
 
                 renderer = new THREE.WebGLRenderer();
                 renderer.setSize(window.innerWidth, window.innerHeight);
-                renderer.setClearColor( 0x202020, 0.0);
+                renderer.setClearColor( 0xafafaf, 0.0);
                 renderer.sortObjects = false;
 
                 container = document.getElementById( 'ThreeJS' );

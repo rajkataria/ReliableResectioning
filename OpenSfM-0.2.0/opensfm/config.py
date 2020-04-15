@@ -130,6 +130,10 @@ resectioning_type: local                            # original or local
 resectioning_distance_measure: aam                  # aam, rmatches, mds, etc.
 resectioning_parameter: 2.0                         # hyperparameter for local resectioning OR threshold when using a distance in original resectioning
 
+# resectioning_type: local                            # original or local
+# resectioning_distance_measure: rmatches             # aam, rmatches, mds, etc.
+# resectioning_parameter: 2.0                         # hyperparameter for local resectioning OR threshold when using a distance in original resectioning
+
 # resectioning_type: original                       # original or local
 # resectioning_distance_measure: rmatches           # aam, rmatches, mds, etc.
 # resectioning_parameter: NA                        # hyperparameter for local resectioning OR threshold when using a distance in original resectioning
