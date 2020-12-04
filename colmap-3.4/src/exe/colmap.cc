@@ -525,7 +525,12 @@ int RunImageRegistrator(int argc, char** argv) {
               << " / " << image.second.NumObservations() << " points"
               << std::endl;
 
-    mapper.RegisterNextImage(mapper_options, image.first);
+    // ReliableResectioning(raj): Set list of currently registered images and register the next image
+    int begin_index = (*options.database_path).rfind('/');
+    std::string database_path = (*options.database_path).substr(0, begin_index);
+    MDS mds = MDS(database_path, "AAM", &database_cache);
+    mds.SetRegisteredImages(reconstruction.RegImageIds());
+    mapper.RegisterNextImage(mds, mapper_options, image.first);
   }
 
   const bool kDiscardReconstruction = false;

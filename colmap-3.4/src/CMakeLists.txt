@@ -19,6 +19,7 @@ set(COLMAP_LIBRARIES
     controllers
     base
     feature
+    jsoncpp
     ui
     util
     controllers

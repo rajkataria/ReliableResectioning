@@ -23,6 +23,7 @@
 #include "optim/bundle_adjustment.h"
 #include "sfm/incremental_triangulator.h"
 #include "util/alignment.h"
+#include "base/mds.h"
 
 namespace colmap {
 
@@ -106,9 +107,11 @@ class IncrementalMapper {
       MAX_VISIBLE_POINTS_NUM,
       MAX_VISIBLE_POINTS_RATIO,
       MIN_UNCERTAINTY,
+      MIN_MDS_DISTANCE,
     };
+    // ReliableResectioning(raj): Changed ImageSelectionMethod from ImageSelectionMethod::MIN_UNCERTAINTY
     ImageSelectionMethod image_selection_method =
-        ImageSelectionMethod::MIN_UNCERTAINTY;
+        ImageSelectionMethod::MIN_MDS_DISTANCE;
 
     bool Check() const;
   };
@@ -143,7 +146,7 @@ class IncrementalMapper {
   // Find best next image to register in the incremental reconstruction. The
   // images should be passed to `RegisterNextImage`. This function automatically
   // ignores images that failed to registered for `max_reg_trials`.
-  std::vector<image_t> FindNextImages(const Options& options);
+  std::vector<image_t> FindNextImages(const MDS mds, const Options& options);
 
   // Attempt to seed the reconstruction from an image pair.
   bool RegisterInitialImagePair(const Options& options, const image_t image_id1,
@@ -151,7 +154,7 @@ class IncrementalMapper {
 
   // Attempt to register image to the existing model. This requires that
   // a previous call to `RegisterInitialImagePair` was successful.
-  bool RegisterNextImage(const Options& options, const image_t image_id);
+  bool RegisterNextImage(const MDS mds, const Options& options, const image_t image_id);
 
   // Triangulate observations of image.
   size_t TriangulateImage(const IncrementalTriangulator::Options& tri_options,

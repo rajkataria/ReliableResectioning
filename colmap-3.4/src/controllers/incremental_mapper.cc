@@ -341,6 +341,13 @@ void IncrementalMapperController::Reconstruct(
     const IncrementalMapper::Options& init_mapper_options) {
   const bool kDiscardReconstruction = true;
 
+  ////////////////////////////////////////////////////////////////////////////
+  // ReliableResectioning(raj): Initialization
+  ////////////////////////////////////////////////////////////////////////////
+  int begin_index = database_path_.rfind('/');
+  std::string database_path = database_path_.substr(0, begin_index);
+  MDS mds = MDS(database_path, "AAM", &database_cache_);
+
   //////////////////////////////////////////////////////////////////////////////
   // Main loop
   //////////////////////////////////////////////////////////////////////////////
@@ -403,9 +410,8 @@ void IncrementalMapperController::Reconstruct(
           return;
         }
       }
-
-      PrintHeading1(StringPrintf("Initializing with image pair #%d and #%d",
-                                 image_id1, image_id2));
+      Image& image1 = reconstruction.Image(image_id1);
+      Image& image2 = reconstruction.Image(image_id2);
       const bool reg_init_success = mapper.RegisterInitialImagePair(
           init_mapper_options, image_id1, image_id2);
       if (!reg_init_success) {
@@ -455,7 +461,10 @@ void IncrementalMapperController::Reconstruct(
 
     bool reg_next_success = true;
     bool prev_reg_next_success = true;
+
     while (reg_next_success) {
+      mds.SetRegisteredImages(reconstruction.RegImageIds());
+      
       BlockIfPaused();
       if (IsStopped()) {
         break;
@@ -464,7 +473,7 @@ void IncrementalMapperController::Reconstruct(
       reg_next_success = false;
 
       const std::vector<image_t> next_images =
-          mapper.FindNextImages(options_->Mapper());
+          mapper.FindNextImages(mds, options_->Mapper());
 
       if (next_images.empty()) {
         break;
@@ -474,7 +483,7 @@ void IncrementalMapperController::Reconstruct(
         const image_t next_image_id = next_images[reg_trial];
         const Image& next_image = reconstruction.Image(next_image_id);
 
-        PrintHeading1(StringPrintf("Registering image #%d (%d)", next_image_id,
+        PrintHeading1(StringPrintf("Registering image #%d / %s (%d)", next_image_id, next_image.Name().c_str(),
                                    reconstruction.NumRegImages() + 1));
 
         std::cout << StringPrintf("  => Image sees %d / %d points",
@@ -483,7 +492,7 @@ void IncrementalMapperController::Reconstruct(
                   << std::endl;
 
         reg_next_success =
-            mapper.RegisterNextImage(options_->Mapper(), next_image_id);
+            mapper.RegisterNextImage(mds, options_->Mapper(), next_image_id);
 
         if (reg_next_success) {
           TriangulateImage(*options_, next_image, &mapper);

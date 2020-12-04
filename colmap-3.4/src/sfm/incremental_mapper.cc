@@ -56,6 +56,10 @@ float RankNextImageMinUncertainty(const Image& image) {
   return static_cast<float>(image.Point3DVisibilityScore());
 }
 
+float RankNextImageMinMDSDistance(const image_t image_id, const Image& image, const MDS mds) {
+  return static_cast<float>(mds.GetMinImageDistanceScore(image_id, image));
+}
+
 }  // namespace
 
 bool IncrementalMapper::Options::Check() const {
@@ -178,10 +182,10 @@ bool IncrementalMapper::FindInitialImagePair(const Options& options,
   return false;
 }
 
-std::vector<image_t> IncrementalMapper::FindNextImages(const Options& options) {
+std::vector<image_t> IncrementalMapper::FindNextImages(const MDS mds, const Options& options) {
   CHECK_NOTNULL(reconstruction_);
   CHECK(options.Check());
-
+  
   std::function<float(const Image&)> rank_image_func;
   switch (options.image_selection_method) {
     case Options::ImageSelectionMethod::MAX_VISIBLE_POINTS_NUM:
@@ -192,6 +196,9 @@ std::vector<image_t> IncrementalMapper::FindNextImages(const Options& options) {
       break;
     case Options::ImageSelectionMethod::MIN_UNCERTAINTY:
       rank_image_func = RankNextImageMinUncertainty;
+      break;
+    case Options::ImageSelectionMethod::MIN_MDS_DISTANCE:
+      PrintHeading1(StringPrintf("MIN_MDS_DISTANCE"));
       break;
   }
 
@@ -219,7 +226,12 @@ std::vector<image_t> IncrementalMapper::FindNextImages(const Options& options) {
 
     // If image has been filtered or failed to register, place it in the
     // second bucket and prefer images that have not been tried before.
-    const float rank = rank_image_func(image.second);
+    float rank = 0.0;
+    if (options.image_selection_method == Options::ImageSelectionMethod::MIN_MDS_DISTANCE) {
+      rank = RankNextImageMinMDSDistance(image.first, image.second, mds);
+    } else {
+      rank = rank_image_func(image.second);
+    }
     if (filtered_images_.count(image.first) == 0 && num_reg_trials == 0) {
       image_ranks.emplace_back(image.first, rank);
     } else {
@@ -320,7 +332,7 @@ bool IncrementalMapper::RegisterInitialImagePair(const Options& options,
   return true;
 }
 
-bool IncrementalMapper::RegisterNextImage(const Options& options,
+bool IncrementalMapper::RegisterNextImage(const MDS mds, const Options& options,
                                           const image_t image_id) {
   CHECK_NOTNULL(reconstruction_);
   CHECK_GE(reconstruction_->NumRegImages(), 2);
@@ -349,6 +361,8 @@ bool IncrementalMapper::RegisterNextImage(const Options& options,
   std::vector<std::pair<point2D_t, point3D_t>> tri_corrs;
   std::vector<Eigen::Vector2d> tri_points2D;
   std::vector<Eigen::Vector3d> tri_points3D;
+  int k_min = 1;
+  int k_max = mds.AdaptiveK(image);
 
   for (point2D_t point2D_idx = 0; point2D_idx < image.NumPoints2D();
        ++point2D_idx) {
@@ -363,6 +377,12 @@ bool IncrementalMapper::RegisterNextImage(const Options& options,
     for (const auto corr : corrs) {
       const Image& corr_image = reconstruction_->Image(corr.image_id);
       if (!corr_image.IsRegistered()) {
+        continue;
+      }
+
+      // ReliableResectioning(raj): This condition enables local pose estimation.
+      int registered_image_rank = mds.RegisteredImageRank(image, corr_image);
+      if (registered_image_rank > k_max) {
         continue;
       }
 

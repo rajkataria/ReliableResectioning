@@ -28,6 +28,7 @@ COLMAP_ADD_LIBRARY(base
     triangulation.h triangulation.cc
     undistortion.h undistortion.cc
     visibility_pyramid.h visibility_pyramid.cc
+    mds.h mds.cc
     warp.h warp.cc
 )
 

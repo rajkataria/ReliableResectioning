@@ -20,6 +20,7 @@
 #include "base/reconstruction_manager.h"
 #include "sfm/incremental_mapper.h"
 #include "util/threading.h"
+#include "base/mds.h"
 
 namespace colmap {
 
