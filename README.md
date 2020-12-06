@@ -30,4 +30,5 @@ Clone Repository: `git clone --branch raj.reliable-resectioning git@github.com:r
 
 
 <h3>Contact</h3>
+
 If you have any questions, please contact [Rajbir Kataria](rk2@illinois.edu)
